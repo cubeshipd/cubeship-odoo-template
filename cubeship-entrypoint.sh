@@ -6,8 +6,10 @@ set -euo pipefail
 
 # Odoo reads the master password only from its configuration file. Written
 # at every start, so the value in the app's settings is always the one used.
-sed -i '/^[[:space:]]*admin_passwd[[:space:]]*=/d' "$ODOO_RC"
-printf 'admin_passwd = %s\n' "$ODOO_MASTER_PASSWORD" >> "$ODOO_RC"
+# Rewritten in place, not with sed -i: that creates a temporary file beside
+# it, and /etc/odoo belongs to root while this runs as odoo.
+conf=$(grep -vE '^[[:space:]]*admin_passwd[[:space:]]*=' "$ODOO_RC" || true)
+printf '%s\nadmin_passwd = %s\n' "$conf" "$ODOO_MASTER_PASSWORD" > "$ODOO_RC"
 
 if [ "${1:-}" = odoo ] && [ "${2:-}" != scaffold ]; then
 	wait-for-psql.py --timeout=60
